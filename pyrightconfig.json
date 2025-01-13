@@ -1,0 +1,6 @@
+{
+    "venvPath": ".",
+    "venv": "env",
+    "reportUnknownMemberType": "none",
+    "reportUnusedCallResult": "none",
+}
