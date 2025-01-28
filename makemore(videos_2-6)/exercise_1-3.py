@@ -202,7 +202,7 @@ def trigram_nn():
         W.data += -LEARNING_RATE * W.grad  # pyright: ignore[reportOperatorIssue]
 
     eval_enc_xs = test_enc_xs
-    eval_ys = dev_ys
+    eval_ys = test_ys
 
     # Forward pass
     logits = eval_enc_xs @ W  # Log counts
@@ -218,36 +218,7 @@ def trigram_nn():
     loss = neg_log_likelihood.mean()
     print("Loss:", loss.item())
 
-    # # Sample names from the neural network. AKA inference.
-    # SAMPLE_SIZE = 20
-    # gen = torch.Generator().manual_seed(2147483647)
-    #
-    # end_char_num = char_to_indx["."]
-    # for _ in range(SAMPLE_SIZE):
-    #     in_char_pair = "." + indx_to_char[randint(0, len(indx_to_char) - 2)]
-    #     in_char_pair_num = char_pair_to_indx[in_char_pair]
-    #     out = in_char_pair
-    #     while True:
-    #         one_hot_enc = torch_func.one_hot(
-    #             torch.tensor(in_char_pair_num), num_classes=len(char_pair_to_indx)
-    #         ).float()
-    #         logits = one_hot_enc @ W  # Log(base e) counts
-    #         counts = logits.exp()
-    #         probs = counts / counts.sum()
-    #         out_char_num = torch.multinomial(
-    #             probs, num_samples=1, replacement=True, generator=gen
-    #         ).item()
-    #         out_char = indx_to_char[out_char_num]  # pyright: ignore[reportArgumentType]
-    #         in_char_pair = in_char_pair[1] + out_char
-    #         in_char_pair_num = char_pair_to_indx[in_char_pair]
-    #         out += out_char
-    #         if out_char_num == end_char_num:
-    #             break
-    #
-    #     print(out[1:-1])
-
-
 if __name__ == "__main__":
     trigram_nn()
-    print("=" * 50, "BIGRAM", "=" * 50)
+    # print("=" * 50, "BIGRAM", "=" * 50)
     # bigram_nn()
