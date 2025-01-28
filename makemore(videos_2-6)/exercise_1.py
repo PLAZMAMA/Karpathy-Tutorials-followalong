@@ -1,4 +1,3 @@
-from code import interact
 from itertools import permutations
 from random import randint
 import torch

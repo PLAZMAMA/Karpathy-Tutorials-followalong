@@ -2,17 +2,21 @@ import math
 from code import interact
 from copy import deepcopy
 from itertools import permutations
-from random import randint, shuffle
+from random import shuffle
 
 import torch
 import torch.nn.functional as torch_func
 
 
-def train_dev_test_split(words: list[str], train_percentage: float = 0.8, dev_percentage: float = 0.1) -> tuple[list[str], list[str], list[str]]:
+def train_dev_test_split(
+    words: list[str], train_percentage: float = 0.8, dev_percentage: float = 0.1
+) -> tuple[list[str], list[str], list[str]]:
     shuffled_words = deepcopy(words)
     shuffle(shuffled_words)
     train_dev_split_point = math.ceil(len(words) * train_percentage)
-    dev_val_split_point = math.floor(train_dev_split_point + (len(words) * dev_percentage))
+    dev_val_split_point = math.floor(
+        train_dev_split_point + (len(words) * dev_percentage)
+    )
     return (
         shuffled_words[:train_dev_split_point],
         shuffled_words[train_dev_split_point:dev_val_split_point],
@@ -20,9 +24,11 @@ def train_dev_test_split(words: list[str], train_percentage: float = 0.8, dev_pe
     )
 
 
-def create_bigram_dataset(words: list[str], char_to_indx: dict[str, int]) -> tuple[torch.Tensor, list[int]]:
+def create_bigram_dataset(
+    words: list[str], char_to_indx: dict[str, int]
+) -> tuple[torch.Tensor, list[int]]:
     xs = []
-    ys:list[int] = []
+    ys: list[int] = []
     for word in words:
         word_chars = (
             ["."] + list(word) + ["."]
@@ -81,7 +87,7 @@ def bigram_nn():
         # Update weights
         W.data += -LEARNING_RATE * W.grad  # pyright: ignore[reportOperatorIssue]
 
-    eval_enc_xs = torch.concat((dev_enc_xs, test_enc_xs))
+    eval_enc_xs = test_enc_xs
     eval_ys = dev_ys + test_ys
     # Forward pass
     logits = eval_enc_xs @ W  # Log counts
@@ -95,9 +101,6 @@ def bigram_nn():
         -probs[torch.arange(probs.shape[0]), eval_ys].log() + 0.01 * (W**2).mean()
     )
     loss = neg_log_likelihood.mean()
-    print("="*50, "Eval Dataset Loss", "="*50)
-    print("Loss:", loss.item())
-
 
     # # Sample names from the neural network. AKA inference.
     # gen = torch.Generator().manual_seed(2147483647)
@@ -123,7 +126,10 @@ def bigram_nn():
     #
     #     print(out[:-1])
 
-def create_trigram_dataset(words: list[str], char_to_indx: dict[str, int], char_pair_to_indx: dict[str, int]) -> tuple[torch.Tensor, list[int]]:
+
+def create_trigram_dataset(
+    words: list[str], char_to_indx: dict[str, int], char_pair_to_indx: dict[str, int]
+) -> tuple[torch.Tensor, list[int]]:
     xs: list[int] = []
     ys: list[int] = []
     for word in words:
@@ -138,6 +144,7 @@ def create_trigram_dataset(words: list[str], char_to_indx: dict[str, int], char_
     enc_xs.requires_grad_()
     return enc_xs, ys
 
+
 def trigram_nn():
     words = open("names.txt", "r").read().splitlines()
     chars = sorted(list(set("".join(words))))
@@ -150,18 +157,27 @@ def trigram_nn():
     # indx_to_char = {indx: char for char, indx in char_to_indx.items()}
 
     train_words, dev_words, test_words = train_dev_test_split(words)
-    
-    train_enc_xs, train_ys = create_trigram_dataset(train_words, char_to_indx, char_pair_to_indx)
-    dev_enc_xs, dev_ys = create_trigram_dataset(dev_words, char_to_indx, char_pair_to_indx)
-    test_enc_xs, test_ys = create_trigram_dataset(test_words, char_to_indx, char_pair_to_indx)
+
+    train_enc_xs, train_ys = create_trigram_dataset(
+        train_words, char_to_indx, char_pair_to_indx
+    )
+    dev_enc_xs, dev_ys = create_trigram_dataset(
+        dev_words, char_to_indx, char_pair_to_indx
+    )
+    test_enc_xs, test_ys = create_trigram_dataset(
+        test_words, char_to_indx, char_pair_to_indx
+    )
 
     # Init weights
     W = torch.randn((len(char_pair_to_indx), len(char_to_indx)), requires_grad=True)
 
     EPOCHS = 500
     LEARNING_RATE = 20
+    REGULARIZATION = 0.2
 
-    for _ in range(EPOCHS):
+    train_enc_xs = torch.concat((train_enc_xs, dev_enc_xs))
+    train_ys += dev_ys
+    for current_epoch in range(EPOCHS):
         # Forward pass
         logits = train_enc_xs @ W  # Log counts
 
@@ -171,10 +187,11 @@ def trigram_nn():
 
         # Calculating loss and printing it
         neg_log_likelihood = (
-            -probs[torch.arange(probs.shape[0]), train_ys].log() + 0.01 * (W**2).mean()
+            -probs[torch.arange(probs.shape[0]), train_ys].log().mean()
+            + (REGULARIZATION * (W**2).mean())  # <- Regularization loss
         )
         loss = neg_log_likelihood.mean()
-        print(f"{loss.item() = }")
+        print(f"Progress: {current_epoch}/{EPOCHS}, Loss: {loss}", end="\r")
 
         # Backpropogation
         if W.grad is not None:
@@ -184,8 +201,8 @@ def trigram_nn():
         # Update weights
         W.data += -LEARNING_RATE * W.grad  # pyright: ignore[reportOperatorIssue]
 
-    eval_enc_xs = torch.concat((dev_enc_xs, test_enc_xs))
-    eval_ys = dev_ys + test_ys
+    eval_enc_xs = test_enc_xs
+    eval_ys = dev_ys
 
     # Forward pass
     logits = eval_enc_xs @ W  # Log counts
@@ -199,7 +216,6 @@ def trigram_nn():
         -probs[torch.arange(probs.shape[0]), eval_ys].log() + 0.01 * (W**2).mean()
     )
     loss = neg_log_likelihood.mean()
-    print("="*50, "Eval Dataset Loss", "="*50)
     print("Loss:", loss.item())
 
     # # Sample names from the neural network. AKA inference.
@@ -234,4 +250,4 @@ def trigram_nn():
 if __name__ == "__main__":
     trigram_nn()
     print("=" * 50, "BIGRAM", "=" * 50)
-    bigram_nn()
+    # bigram_nn()
