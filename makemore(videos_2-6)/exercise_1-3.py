@@ -164,10 +164,9 @@ def trigram_nn():
         test_words, char_to_indx, char_pair_to_indx
     )
 
-
     EPOCHS = 500
+    LEARNING_RATE = 50
 
-    learning_rate = 50
     cross_entropy_loss = torch.nn.CrossEntropyLoss()
 
     train_xs += dev_xs
@@ -191,14 +190,14 @@ def trigram_nn():
         loss.backward()
 
         # Update weights
-        weights.data += -learning_rate * weights.grad  # pyright: ignore[reportOperatorIssue]
+        weights.data += -LEARNING_RATE * weights.grad  # pyright: ignore[reportOperatorIssue]
 
     # Forward pass
     logits = weights[eval_xs] # Log counts
     loss = cross_entropy_loss(logits, eval_ys)
 
     print(" " * 100, end="\r") # Clearing line
-    print("learning_rate:", learning_rate, "Loss:", loss.item())
+    print("learning_rate:", LEARNING_RATE, "Loss:", loss.item())
 
 if __name__ == "__main__":
     trigram_nn()
