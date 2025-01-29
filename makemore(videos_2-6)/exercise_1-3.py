@@ -164,55 +164,41 @@ def trigram_nn():
         test_words, char_to_indx, char_pair_to_indx
     )
 
-    # Init weights
-    W = torch.randn((len(char_pair_to_indx), len(char_to_indx)), requires_grad=True)
 
     EPOCHS = 500
-    LEARNING_RATE = 20
-    REGULARIZATION = 0.2
+
+    learning_rate = 50
+    cross_entropy_loss = torch.nn.CrossEntropyLoss()
 
     train_xs += dev_xs
-    train_ys += dev_ys
+    train_ys = torch.tensor(train_ys + dev_ys)
+    eval_xs = test_xs
+    eval_ys = torch.tensor(test_ys)
+
+    # Init weights
+    weights = torch.randn((len(char_pair_to_indx), len(char_to_indx)), requires_grad=True)
+
     for current_epoch in range(EPOCHS):
         # Forward pass
-        logits = W[train_xs] # Log counts
+        logits = weights[train_xs] # Log counts
 
-        # Cost funcion (Softmax)
-        counts = logits.exp()  # Equivilant of a row in the Bigram marix above
-        probs = counts / counts.sum(1, keepdim=True)
-
-        # Calculating loss and printing it
-        neg_log_likelihood = (
-            -probs[torch.arange(probs.shape[0]), train_ys].log().mean()
-            + (REGULARIZATION * (W**2).mean())  # <- Regularization loss
-        )
-        loss = neg_log_likelihood.mean()
+        loss:torch.Tensor = cross_entropy_loss(logits, train_ys)
         print(f"Progress: {current_epoch}/{EPOCHS}, Loss: {loss}", end="\r")
 
         # Backpropogation
-        if W.grad is not None:
-            W.grad.zero_()
+        if weights.grad is not None:
+            weights.grad.zero_()
         loss.backward()
 
         # Update weights
-        W.data += -LEARNING_RATE * W.grad  # pyright: ignore[reportOperatorIssue]
-
-    eval_xs = test_xs
-    eval_ys = test_ys
+        weights.data += -learning_rate * weights.grad  # pyright: ignore[reportOperatorIssue]
 
     # Forward pass
-    logits = W[eval_xs] # Log counts
+    logits = weights[eval_xs] # Log counts
+    loss = cross_entropy_loss(logits, eval_ys)
 
-    # Cost funcion (Softmax)
-    counts = logits.exp()  # Equivilant of a row in the Bigram marix above
-    probs = counts / counts.sum(1, keepdim=True)
-
-    # Calculating loss and printing it
-    neg_log_likelihood = (
-        -probs[torch.arange(probs.shape[0]), eval_ys].log() + 0.01 * (W**2).mean()
-    )
-    loss = neg_log_likelihood.mean()
-    print("Loss:", loss.item())
+    print(" " * 100, end="\r") # Clearing line
+    print("learning_rate:", learning_rate, "Loss:", loss.item())
 
 if __name__ == "__main__":
     trigram_nn()
