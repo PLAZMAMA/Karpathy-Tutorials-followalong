@@ -129,7 +129,7 @@ def bigram_nn():
 
 def create_trigram_dataset(
     words: list[str], char_to_indx: dict[str, int], char_pair_to_indx: dict[str, int]
-) -> tuple[torch.Tensor, list[int]]:
+) -> tuple[list[int], list[int]]:
     xs: list[int] = []
     ys: list[int] = []
     for word in words:
@@ -138,11 +138,7 @@ def create_trigram_dataset(
             xs.append(char_pair_to_indx[char1 + char2])
             ys.append(char_to_indx[char3])
 
-    enc_xs = torch_func.one_hot(
-        torch.tensor(xs), num_classes=len(char_pair_to_indx)
-    ).float()
-    enc_xs.requires_grad_()
-    return enc_xs, ys
+    return xs, ys
 
 
 def trigram_nn():
@@ -158,13 +154,13 @@ def trigram_nn():
 
     train_words, dev_words, test_words = train_dev_test_split(words)
 
-    train_enc_xs, train_ys = create_trigram_dataset(
+    train_xs, train_ys = create_trigram_dataset(
         train_words, char_to_indx, char_pair_to_indx
     )
-    dev_enc_xs, dev_ys = create_trigram_dataset(
+    dev_xs, dev_ys = create_trigram_dataset(
         dev_words, char_to_indx, char_pair_to_indx
     )
-    test_enc_xs, test_ys = create_trigram_dataset(
+    test_xs, test_ys = create_trigram_dataset(
         test_words, char_to_indx, char_pair_to_indx
     )
 
@@ -175,11 +171,11 @@ def trigram_nn():
     LEARNING_RATE = 20
     REGULARIZATION = 0.2
 
-    train_enc_xs = torch.concat((train_enc_xs, dev_enc_xs))
+    train_xs += dev_xs
     train_ys += dev_ys
     for current_epoch in range(EPOCHS):
         # Forward pass
-        logits = train_enc_xs @ W  # Log counts
+        logits = W[train_xs] # Log counts
 
         # Cost funcion (Softmax)
         counts = logits.exp()  # Equivilant of a row in the Bigram marix above
@@ -201,11 +197,11 @@ def trigram_nn():
         # Update weights
         W.data += -LEARNING_RATE * W.grad  # pyright: ignore[reportOperatorIssue]
 
-    eval_enc_xs = test_enc_xs
+    eval_xs = test_xs
     eval_ys = test_ys
 
     # Forward pass
-    logits = eval_enc_xs @ W  # Log counts
+    logits = W[eval_xs] # Log counts
 
     # Cost funcion (Softmax)
     counts = logits.exp()  # Equivilant of a row in the Bigram marix above
