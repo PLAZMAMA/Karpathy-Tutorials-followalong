@@ -46,7 +46,7 @@ def create_bigram_dataset(
 
 def bigram_nn():
     # Create bigram matrix
-    words = open("names.txt", "r").read().splitlines()
+    words = open("../names.txt", "r").read().splitlines()
     chars = sorted(list(set("".join(words))))
     char_to_indx = {char: indx for indx, char in enumerate(chars)}
     char_to_indx["."] = 26
