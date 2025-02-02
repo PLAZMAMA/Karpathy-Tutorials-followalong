@@ -63,6 +63,8 @@ def bigram_nn():
     EPOCHS = 500
     LEARNING_RATE = 20
 
+    train_enc_xs = torch.concat((train_enc_xs, dev_enc_xs))
+    train_ys += dev_ys
     # Train
     for _ in range(EPOCHS):
         # Forward pass
@@ -103,28 +105,29 @@ def bigram_nn():
     loss = neg_log_likelihood.mean()
 
     # # Sample names from the neural network. AKA inference.
-    # gen = torch.Generator().manual_seed(2147483647)
-    #
-    # start_char_num = W.shape[0] - 1
-    # end_char_num = W.shape[0] - 1
-    # for _ in range(20):
-    #     out = ""
-    #     char_num = start_char_num
-    #     while True:
-    #         one_hot_enc = torch_func.one_hot(
-    #             torch.tensor(char_num), num_classes=W.shape[0]
-    #         ).float()
-    #         logits = one_hot_enc @ W  # Log(base e) counts
-    #         counts = logits.exp()
-    #         probs = counts / counts.sum()
-    #         char_num = torch.multinomial(
-    #             probs, num_samples=1, replacement=True, generator=gen
-    #         ).item()
-    #         out += indx_to_char[char_num]  # pyright: ignore[reportArgumentType]
-    #         if char_num == end_char_num:
-    #             break
-    #
-    #     print(out[:-1])
+    gen = torch.Generator().manual_seed(2147483647)
+
+    indx_to_char = {indx: char for char, indx in char_to_indx.items()}
+    start_char_num = W.shape[0] - 1
+    end_char_num = W.shape[0] - 1
+    for _ in range(20):
+        out = ""
+        char_num = start_char_num
+        while True:
+            one_hot_enc = torch_func.one_hot(
+                torch.tensor(char_num), num_classes=W.shape[0]
+            ).float()
+            logits = one_hot_enc @ W  # Log(base e) counts
+            counts = logits.exp()
+            probs = counts / counts.sum()
+            char_num = torch.multinomial(
+                probs, num_samples=1, replacement=True, generator=gen
+            ).item()
+            out += indx_to_char[char_num] # pyright: ignore[reportArgumentType]
+            if char_num == end_char_num:
+                break
+
+        print(out[:-1])
 
 
 def create_trigram_dataset(
@@ -142,7 +145,7 @@ def create_trigram_dataset(
 
 
 def trigram_nn():
-    words = open("names.txt", "r").read().splitlines()
+    words = open("../names.txt", "r").read().splitlines()
     chars = sorted(list(set("".join(words))))
     char_to_indx = {char: indx for indx, char in enumerate(chars)}
     char_to_indx["."] = 26
