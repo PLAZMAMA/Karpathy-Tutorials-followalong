@@ -1,4 +1,8 @@
 {
+    "include": [
+        "./",
+    ],
+    "extraPaths": ["~/src/tinygrad"],
     "venvPath": ".",
     "venv": "env",
     "reportUnknownMemberType": "none",
