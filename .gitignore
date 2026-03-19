@@ -32,3 +32,5 @@ dmypy.json
 
 # PyPI configuration file
 .pypirc
+
+*.webm
