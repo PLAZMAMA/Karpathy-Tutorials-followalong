@@ -34,3 +34,6 @@ dmypy.json
 .pypirc
 
 *.webm
+
+# Local Discord export (large / private)
+makemore(videos_2-6)/crazy_gc_data/
